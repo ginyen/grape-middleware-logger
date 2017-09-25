@@ -7,7 +7,7 @@ class Grape::Middleware::Logger < Grape::Middleware::Globals
   attr_reader :logger
 
   class << self
-    attr_accessor :logger, :filter, :headers
+    attr_accessor :logger, :filter, :headers, :logs
 
     def default_logger
       default = Logger.new(STDOUT)
@@ -21,21 +21,32 @@ class Grape::Middleware::Logger < Grape::Middleware::Globals
     @options[:filter] ||= self.class.filter
     @options[:headers] ||= self.class.headers
     @logger = options[:logger] || self.class.logger || self.class.default_logger
+    @is_render_json = options[:is_render_json] || false
+    @logs = {} if @is_render_json
   end
 
   def before
     start_time
     # sets env['grape.*']
     super
-    logger.info ''
-    logger.info %Q(Started %s "%s" at %s) % [
-      env[Grape::Env::GRAPE_REQUEST].request_method,
-      env[Grape::Env::GRAPE_REQUEST].path,
-      start_time.to_s
-    ]
-    logger.info %Q(Processing by #{processed_by})
-    logger.info %Q(  Parameters: #{parameters})
-    logger.info %Q(  Headers: #{headers}) if @options[:headers]
+    unless @is_render_json
+      logger.info ''
+      logger.info %Q(Started %s "%s" at %s) % [
+        env[Grape::Env::GRAPE_REQUEST].request_method,
+        env[Grape::Env::GRAPE_REQUEST].path,
+        start_time.to_s
+      ]
+      logger.info %Q(Processing by #{processed_by})
+      logger.info %Q(  Parameters: #{parameters})
+      logger.info %Q(  Headers: #{headers}) if @options[:headers]
+    else
+      @logs[:start_time] = start_time.to_s
+      @logs[:request_method] = env[Grape::Env::GRAPE_REQUEST].request_method
+      @logs[:path] = env[Grape::Env::GRAPE_REQUEST].path
+      @logs[:processed] = processed_by
+      @logs[:parameters] = parameters
+      @logs[:headers] = headers if @options[:headers]
+    end
   end
 
   # @note Error and exception handling are required for the +after+ hooks
@@ -64,8 +75,15 @@ class Grape::Middleware::Logger < Grape::Middleware::Globals
   end
 
   def after(status)
-    logger.info "Completed #{status} in #{((Time.now - start_time) * 1000).round(2)}ms"
-    logger.info ''
+    runtime = ((Time.now - start_time) * 1000).round(2)
+    unless @is_render_json
+      logger.info "Completed #{status} in #{runtime}ms"
+      logger.info ''
+    else
+      @logs[:status] = status
+      @logs[:runtime] = "#{runtime}ms"
+      logger.info @logs.to_json
+    end
   end
 
   #
@@ -73,12 +91,20 @@ class Grape::Middleware::Logger < Grape::Middleware::Globals
   #
 
   def after_exception(e)
-    logger.info %Q(  #{e.class.name}: #{e.message})
+    unless @is_render_json
+      logger.info %Q(  #{e.class.name}: #{e.message})
+    else
+      @logs[:exception] = %Q(#{e.class.name}: #{e.message})
+    end
     after(500)
   end
 
   def after_failure(error)
-    logger.info %Q(  Error: #{error[:message]}) if error[:message]
+    unless @is_render_json
+      logger.info %Q(  Error: #{error[:message]}) if error[:message]
+    else
+      @logs.merge!(error[:message]) if error[:message]
+    end
     after(error[:status])
   end
 
