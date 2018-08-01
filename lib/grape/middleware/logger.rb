@@ -39,12 +39,14 @@ class Grape::Middleware::Logger < Grape::Middleware::Globals
       logger.info %Q(Processing by #{processed_by})
       logger.info %Q(  Parameters: #{parameters})
       logger.info %Q(  Headers: #{headers}) if @options[:headers]
+      logger.info %Q(  Remote IP: #{env[Grape::Env::GRAPE_REQUEST].env['REMOTE_ADDR']})
     else
       @logs[:start_time] = start_time.to_s
       @logs[:request_method] = env[Grape::Env::GRAPE_REQUEST].request_method
       @logs[:path] = env[Grape::Env::GRAPE_REQUEST].path
       @logs[:processed] = processed_by
       @logs[:parameters] = parameters
+      @logs[:remote_ip] = env[Grape::Env::GRAPE_REQUEST].env['REMOTE_ADDR']
       @logs[:headers] = headers if @options[:headers]
     end
   end
