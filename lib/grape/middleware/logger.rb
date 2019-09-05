@@ -61,6 +61,9 @@ class Grape::Middleware::Logger < Grape::Middleware::Globals
       begin
         @app_response = @app.call(@env)
       rescue => e
+        if @options[:around_exception] && @options[:around_exception].is_a?(Proc)
+          e = @options[:around_exception].call(e)
+        end
         after_exception(e)
         raise e
       end
@@ -98,7 +101,7 @@ class Grape::Middleware::Logger < Grape::Middleware::Globals
     else
       @logs[:exception] = %Q(#{e.class.name}: #{e.message})
     end
-    after(500)
+    after(e.try(:status_code) || 500)
   end
 
   def after_failure(error)
@@ -107,7 +110,7 @@ class Grape::Middleware::Logger < Grape::Middleware::Globals
     else
       @logs.merge!(error[:message]) if error[:message]
     end
-    after(error[:status])
+    after(error.try(:[], :status_code) || error[:status])
   end
 
   def parameters
