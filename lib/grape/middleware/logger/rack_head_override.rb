@@ -5,7 +5,8 @@ class Grape::Middleware::Logger
     def call(env)
       response = super
       status, _, rack = *response
-      response_object = JSON.parse(rack.body.try(:first) || '{}').with_indifferent_access
+      # rescue rack response in case non-json output is given
+      response_object = JSON.parse(rack.body.try(:first) || '{}').with_indifferent_access rescue {}
 
       if env && env['grape.middleware.log'].present?
         logger = env['grape.middleware.logger']
