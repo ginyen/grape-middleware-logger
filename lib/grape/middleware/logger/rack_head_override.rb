@@ -44,12 +44,12 @@ class Grape::Middleware::Logger
     def sanitize(input, &sanitizer)
       output = if input.is_a?(Hash)
         input.map do |k, v|
-          v = send(:sanitize, sanitizer.call(k, v), sanitizer)
+          v = send(:sanitize, sanitizer.call(k, v), &sanitizer)
           [k, v]
         end.to_h
       elsif input.is_a?(Array)
         input.map do |v|
-          send(:sanitize, sanitizer.call(nil, v), sanitizer)
+          send(:sanitize, sanitizer.call(nil, v), &sanitizer)
         end
       else
         sanitizer.call(nil, input)
