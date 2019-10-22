@@ -21,6 +21,7 @@ class Grape::Middleware::Logger < Grape::Middleware::Globals
     @options[:filter] ||= self.class.filter
     @options[:headers] ||= self.class.headers
     @logger = options[:logger] || self.class.logger || self.class.default_logger
+    @log_sanitizer = options[:log_sanitizer] || Proc.new { |v| k.to_s =~ /password/ ? '[password]' : v }
     @is_render_json = options[:is_render_json] || false
     reset_log!
   end
@@ -30,14 +31,14 @@ class Grape::Middleware::Logger < Grape::Middleware::Globals
 
     super
 
-    @log = {
+    @log.merge!({
       start_time: start_time,
       request_method: env[Grape::Env::GRAPE_REQUEST].request_method,
       path: env[Grape::Env::GRAPE_REQUEST].path,
       processed: processed_by,
       parameters: parameters,
       remote_ip: env[Grape::Env::GRAPE_REQUEST].env['REMOTE_ADDR'],
-    }
+    })
     @log[:headers] = headers if @options[:headers]
   end
 
@@ -72,6 +73,7 @@ class Grape::Middleware::Logger < Grape::Middleware::Globals
     @log[:end_time] = Time.now
     env['grape.middleware.logger'] = @logger
     env['grape.middleware.log'] = @log
+    env['grape.middleware.log_sanitizer'] = @log_sanitizer
   end
 
   #
