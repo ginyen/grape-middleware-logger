@@ -29,7 +29,7 @@ class Grape::Middleware::Logger
           logger.info %Q(  Parameters: #{log[:parameters]})
           logger.info %Q(  Headers: #{log[:headers]}) if log[:headers].present?
           logger.info %Q(  Remote IP: #{log[:remote_ip]})
-          logger.info "Completed #{status} in #{runtime}ms"
+          logger.info "Completed #{log[:status]} in #{log[:runtime]}ms"
           logger.info ''
         else
           logger.info log.to_json
