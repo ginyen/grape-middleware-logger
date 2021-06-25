@@ -11,7 +11,7 @@ class Grape::Middleware::Logger
       if env && env['grape.middleware.log'].present?
         logger = env['grape.middleware.logger']
         log_sanitizer = env['grape.middleware.log_sanitizer']
-        log = sanitize(env['grape.middleware.log'], &log_sanitizer)
+        log = Grape::Middleware::Logger.sanitize(env['grape.middleware.log'], &log_sanitizer)
         log[:status] = response[0]
         log[:runtime] = "#{((log[:end_time] - log[:start_time]) * 1000).round(2)}ms"
 
@@ -25,10 +25,7 @@ class Grape::Middleware::Logger
             log[:path],
             log[:start_time].to_s
           ]
-          logger.info %Q(Processing by #{log[:processed]})
-          logger.info %Q(  Parameters: #{log[:parameters]})
-          logger.info %Q(  Headers: #{log[:headers]}) if log[:headers].present?
-          logger.info %Q(  Remote IP: #{log[:remote_ip]})
+          logger.info %Q(Processed by #{log[:processed]})
           logger.info "Completed #{log[:status]} in #{log[:runtime]}ms"
           logger.info ''
         else
@@ -37,24 +34,6 @@ class Grape::Middleware::Logger
       end
 
       response
-    end
-
-    private
-
-    def sanitize(input, &sanitizer)
-      output = if input.is_a?(Hash)
-        input.map do |k, v|
-          v = send(:sanitize, sanitizer.call(k, v), &sanitizer)
-          [k, v]
-        end.to_h
-      elsif input.is_a?(Array)
-        input.map do |v|
-          send(:sanitize, sanitizer.call(nil, v), &sanitizer)
-        end
-      else
-        sanitizer.call(nil, input)
-      end
-      output
     end
   end
 end
