@@ -14,6 +14,22 @@ class Grape::Middleware::Logger < Grape::Middleware::Globals
       default.formatter = ->(*args) { args.last.to_s << "\n".freeze }
       default
     end
+
+    def sanitize(input, &sanitizer)
+      output = if input.is_a?(Hash)
+        input.map do |k, v|
+          v = send(:sanitize, sanitizer.call(k, v), &sanitizer)
+          [k, v]
+        end.to_h
+      elsif input.is_a?(Array)
+        input.map do |v|
+          send(:sanitize, sanitizer.call(nil, v), &sanitizer)
+        end
+      else
+        sanitizer.call(nil, input)
+      end
+      output
+    end
   end
 
   def initialize(_, options = {})
@@ -40,6 +56,26 @@ class Grape::Middleware::Logger < Grape::Middleware::Globals
       remote_ip: env[Grape::Env::GRAPE_REQUEST].env['REMOTE_ADDR'],
     })
     @log[:headers] = headers if @options[:headers]
+
+    logger = @logger
+    log_sanitizer = @log_sanitizer
+    log = self.class.sanitize(@log, &log_sanitizer)
+
+    unless log[:render_json]
+      logger.info ''
+      logger.info %Q(Started %s "%s" at %s) % [
+        log[:request_method],
+        log[:path],
+        log[:start_time].to_s
+      ]
+      logger.info %Q(Processing by #{log[:processed]})
+      logger.info %Q(  Parameters: #{log[:parameters]})
+      logger.info %Q(  Headers: #{log[:headers]}) if log[:headers].present?
+      logger.info %Q(  Remote IP: #{log[:remote_ip]})
+      logger.info ''
+    else
+      logger.info log.to_json
+    end
   end
 
   # @note Error and exception handling are required for the +after+ hooks
