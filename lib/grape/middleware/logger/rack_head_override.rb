@@ -18,6 +18,9 @@ class Grape::Middleware::Logger
         log[:exception] = response_object[:code] if response_object[:code].present?
         log[:message] = response_object[:error] if response_object[:error].present?
 
+        remove_keys = [:start_time, :processed, :parameters, :remote_ip, :headers]
+        log.reject! { |k| remove_keys.include?(k) }
+
         unless log[:render_json]
           logger.info ''
           logger.info %Q(Started %s "%s" at %s) % [
@@ -26,6 +29,7 @@ class Grape::Middleware::Logger
             log[:start_time].to_s
           ]
           logger.info %Q(Processed by #{log[:processed]})
+          logger.info %Q(  Trace ID: #{log[:trace_id]})
           logger.info "Completed #{log[:status]} in #{log[:runtime]}ms"
           logger.info ''
         else
