@@ -56,7 +56,7 @@ class Grape::Middleware::Logger < Grape::Middleware::Globals
       remote_ip: env[Grape::Env::GRAPE_REQUEST].env['REMOTE_ADDR'],
     })
     @log[:headers] = headers if @options[:headers]
-    @log[:trace_id] = env[:trace_id]
+    @log[:trace_id] = env['trace_id']
 
     logger = @logger
     log_sanitizer = @log_sanitizer
