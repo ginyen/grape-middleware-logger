@@ -28,7 +28,6 @@ class Grape::Middleware::Logger
             log[:path],
             log[:start_time].to_s
           ]
-          logger.info %Q(Processed by #{log[:processed]})
           logger.info %Q(  Trace ID: #{log[:trace_id]})
           logger.info "Completed #{log[:status]} in #{log[:runtime]}ms"
           logger.info ''
