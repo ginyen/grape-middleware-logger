@@ -18,7 +18,7 @@ class Grape::Middleware::Logger
         log[:exception] = response_object[:code] if response_object[:code].present?
         log[:message] = response_object[:error] if response_object[:error].present?
 
-        remove_keys = [:start_time, :processed, :parameters, :remote_ip, :headers]
+        remove_keys = [:start_time, :processed, :parameters, :remote_ip]
         log.reject! { |k| remove_keys.include?(k) }
 
         unless log[:render_json]
