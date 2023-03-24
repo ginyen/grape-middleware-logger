@@ -57,6 +57,7 @@ class Grape::Middleware::Logger < Grape::Middleware::Globals
     })
     @log[:headers] = headers if @options[:headers]
     @log[:trace_id] = env['trace_id']
+    @log[:custom_info] = env['custom_info'] if env['custom_info'].present? && env['custom_info'].is_a?(Hash)
 
     logger = @logger
     log_sanitizer = @log_sanitizer
